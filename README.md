@@ -60,6 +60,44 @@ Your bootloader can ignore `S8` lines.
 The first address in this S-record is `0x1000`.
 For this homework assignment, after we load this S-record into memory, we would jump to address `0x1000` to start running the program.
 
+### S-Record Format
+
+| S | Type | Byte Count | Address | Data | Checksum|
+|---|------|------------|---------|------|---------|
+
+An SREC format file consists of a series of ASCII text records. The records have the following structure from left to right:
+
+1. **Record start** - each record begins with an uppercase letter "S" character (ASCII 0x53) which stands for "Start-of-Record".[2]
+2. **Record type** - single numeric digit "0" to "9", defining the type of record.
+3. **Byte count** - two hex digits, indicating the number of bytes (hex digit pairs) that follow in the rest of the record (address + data + checksum). This field has a minimum value of 3 for 16-bit address field plus 1 checksum byte, and a maximum value of 255 (0xFF).
+4. **Address** - four / six / eight hex digits as determined by the record type. The address bytes are arranged in big-endian format.
+5. **Data** - a sequence of 2n hex digits, for n bytes of the data. For S1/S2/S3 records, a maximum of 32 bytes per record is typical since it will fit on an 80 character wide terminal screen, though 16 bytes would be easier to visually decode each byte at a specific address.
+5. **Checksum** - two hex digits, the least significant byte of ones' complement of the sum of the values represented by the two hex digit pairs for the byte count, address and data fields. See example section for a detailed checksum example.
+
+### Record Types
+
+The specification for the S-record line types is given below (thanks [Wikipedia](https://en.wikipedia.org/wiki/SREC_(file_format))).
+Your program can ignore all line types except for `S1`, which contain data to be loaded into memory.
+You can optionally use `S8` lines to find the entry point of the program being loaded into memory.
+
+| Record Field | Purpose       | Address Field    | Description |
+|--------------|---------------|------------------|-------------|
+|      `S0`    |  Header       | 2 Bytes (`0000`) | Contains ASCII comment string represented as a series of hex digit pairs. |
+|      `S1`    |  Data         | 2 Bytes          | This record contains data that starts at the 16-bit address field. The number of bytes of data contained in this record is "Byte Count Field" minus 3 (that is, 2 bytes for "16-bit Address Field" and 1 byte for "Checksum Field"). |
+|      `S2`    |  Data         | 3 Bytes          | This record contains data that starts at the 24-bit address field. The number of bytes of data contained in this record is "Byte Count Field" minus 4 (that is, 3 bytes for "24-bit Address Field" and 1 byte for "Checksum Field"). |
+|      `S3`    |  Data         | 4 Bytes          | This record contains data that starts at the 32-bit address field. The number of bytes of data contained in this record is "Byte Count Field" minus 5 (that is, 4 bytes for "32-bit Address Field" and 1 byte for "Checksum Field"). |
+|      `S4`    | Reserved      | N/A              | This record type is reserved (not used). |
+|      `S5`    |  Count        | 2-byte count     | This optional record contains a 16-bit count of S1/S2/S3 records. This record is used if the record count is less than or equal to 65,535 (0xFFFF), otherwise S6 record would be used. |
+|      `S6`    |  Count        | 3-byte count     | This optional record contains a 24-bit count of S1/S2/S3 records. This record is used if the record count is less than or equal to 16,777,215 (0xFFFFFF). If less than 65,536 (0x10000), then S5 record would be used. |
+|      `S7`    | Start Address | 4-byte address   | This record contains the starting execution location at a 32-bit address. This is used to terminate a series of S3 records. If a SREC file is only used to program a memory device and the execution location is ignored, then an address of zero could be used. |
+|      `S8`    | Start Address | 3-byte address   | This record contains the starting execution location at a 24-bit address. This is used to terminate a series of S2 records. If a SREC file is only used to program a memory device and the execution location is ignored, then an address of zero could be used. |
+|      `S9`    | Start Address | 2-byte address   | This record contains the starting execution location at a 16-bit address. This is used to terminate a series of S1 records. If a SREC file is only used to program a memory device and the execution location is ignored, then an address of zero could be used. |
+
+
+
+
+
+
 
 ## Reading a File in Easy68k
 
@@ -190,7 +228,8 @@ I have written code for an example state machine in 68k assembly below.
 | File read Working                                     |     5      |
 | FSM Ignores `S0` and `S8` lines                       |     5      |
 | FSM Parses the correct address from `S1` lines        |     10     |
-| FSM reads data from `S1` lines and places it into mem |     20     |
+| FSM reads data from `S1` lines and places it into mem |     15     |
+| Bootloader jumps to the entry point of the S-record   |     5      |
 
 
 
