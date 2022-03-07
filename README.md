@@ -119,3 +119,79 @@ We need to subtract 7 more in order to get binary `0x0A`: `0x41` - `0x30` - `0x0
 
 You should write a function that converts a pair of hex nibbles to a binary byte.
 
+## Suggested Approach
+
+1. Write a function that converts a hex string to a binary integer. This was Homework 6. You may want to modify your submission for Homework 6 so that one of its parameters is the number of hex characters to convert to binary.
+2. Write a function that opens a file.
+3. Write a function that reads from a file into a buffer in memory.
+4. Build a state machine that parses S-records. Tips:
+
+* Start this by drawing your state transition diagram out on paper.
+* Give every state a meaningful name. For example, the states in my FSM are called LOOK_FOR_S, LOOK_FOR_RECORD_TYPE, LOOK_FOR_NBYTES, etc.
+* You need to convert the address and data fields of the S-record from hex to binary. The address field of an `S1` line is 2 bytes (4 nibbles) long. The data field of the S-record should be converted one byte at a time. Each byte of data shoud be converted to binary and saved into memory at the address specified.
+
+
+I have written code for an example state machine in 68k assembly below.
+
+
+    ; STATE DEFINITIONS. EACH STATE GETS ASSIGNED A UNIQUE INTEGER IDENTIFIER.
+    STATE_INIT    EQU 0
+    STATE_1       EQU 1
+    STATE_2       EQU 2
+    ; ETC...
+    
+    ORG    $1000
+    START:                  ; first instruction of program
+    
+    ; Open S-rec file, read file contents into buffer...
+    
+    ; Below is the code for implementing the FSM:
+    PROCESS_FSM:
+        CMPI.L #STATE_INIT, state
+        BEQ PROCESS_STATE_INIT
+        CMPI.L #STATE_1, state
+        BEQ PROCESS_STATE_1
+        CMPI.L #STATE_2, state
+        BEQ PROCESS_STATE_2
+        ; ETC...
+
+    PROCESS_STATE_INIT:
+        ; PUT YOUR CODE IN HERE TO DO WHAT NEEDS TO BE DONE IN STATE_INIT.
+        ; UPDATE THE state VARIABLE TO GO TO THE NEXT STATE.
+        MOVE.L #STATE_1,state
+        BRA PROCESS_FSM
+
+    PROCESS_STATE_1:
+        ; PUT YOUR CODE IN HERE TO DO WHAT NEEDS TO BE DONE IN STATE_1.
+        ; UPDATE THE state VARIABLE TO GO TO THE NEXT STATE.
+        MOVE.L #STATE_2,state
+        BRA PROCESS_FSM
+    
+    PROCESS_STATE_2:
+        ; PUT YOUR CODE IN HERE TO DO WHAT NEEDS TO BE DONE IN STATE_2.
+        ; UPDATE THE state VARIABLE TO GO TO THE NEXT STATE.
+        MOVE.L #STATE_1,state
+        BRA PROCESS_FSM
+
+        SIMHALT             ; halt simulator
+
+    state:
+        dc.l STATE_INIT
+        END    START        ; last line of source
+
+
+
+## Grading
+
+|              Task                                     |   Points   |
+|-------------------------------------------------------|------------|
+| `hex2int` Working                                     |     5      |
+| File open Working                                     |     5      |
+| File read Working                                     |     5      |
+| FSM Ignores `S0` and `S8` lines                       |     5      |
+| FSM Parses the correct address from `S1` lines        |     10     |
+| FSM reads data from `S1` lines and places it into mem |     20     |
+
+
+
+
